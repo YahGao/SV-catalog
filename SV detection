@@ -10,13 +10,18 @@ bioawk -c fastx '{print "PacBio_HiFi," length($seq)}' sample.hifi_reads.fastq.gz
 #  SVs detection  #
 ###################
 #Read-based approaches
-pbmm2 align Bos_taurus.ARS-UCD1.2.dna.toplevel.fa sample.hifi_reads.fastq.gz 1.1-map-pbmm2_ccs.bam --preset CCS --sort --rg '@RG\tID:myid\tSM:mysample' --log-level INFO
-samtools view -h -b -q 30 1.1-map-pbmm2_ccs.bam -o 1.2-map-pbmm2_ccs_mq20.bam
-samtools index 1.2-map-pbmm2_ccs_mq20.bam 1.2-map-pbmm2_ccs_mq20.bam.bai
+pbmm2 align Bos_taurus.ARS-UCD1.2.dna.toplevel.fa sample.hifi_reads.fastq.gz map-pbmm2_ccs.bam \
+--preset CCS \
+--sort \
+--rg '@RG\tID:myid\tSM:mysample' \
+--log-level INFO
+
+samtools view -h -b -q 30 map-pbmm2_ccs.bam -o map-pbmm2_ccs_mq20.bam
+samtools index map-pbmm2_ccs_mq20.bam map-pbmm2_ccs_mq20.bam.bai
 
 
-pbsv discover 1.2-map-pbmm2_ccs_mq20.bam 2-sv-pbsv_2.8.0.svsig.gz
-pbsv call -j 15 Bos_taurus.ARS-UCD1.2.dna.toplevel.fa 2-sv-pbsv_2.8.0.svsig.gz 2-sv-pbsv_2.8.0.vcf --ccs
+pbsv discover map-pbmm2_ccs_mq20.bam sv-pbsv.svsig.gz
+pbsv call -j 15 Bos_taurus.ARS-UCD1.2.dna.toplevel.fa sv-pbsv.svsig.gz sv-pbsv.vcf --ccs
 
 
 svim alignment \
@@ -25,25 +30,56 @@ svim alignment \
 --interspersed_duplications_as_insertions \
 --tandem_duplications_as_insertions \
 --read_names \
---max_sv_size 1000000 2-sv-svim/ 1.2-map-pbmm2_ccs_mq20.bam Bos_taurus.ARS-UCD1.2.dna.toplevel.fa
+--max_sv_size 1000000 sv-svim/ map-pbmm2_ccs_mq20.bam Bos_taurus.ARS-UCD1.2.dna.toplevel.fa
 
 
-samtools view -b -h 1.2-map-pbmm2_ccs_mq20.bam ${chr} > 1.2-map-pbmm2_ccs_mq20.chr${chr}.bam
-samtools calmd -bS 1.2-map-pbmm2_ccs_mq20.chr${chr}.bam Bos_taurus.ARS-UCD1.2.dna.toplevel.fa > 1.2-map-pbmm2_ccs_mq20.chr${chr}.md.bam 
-samtools merge 2-sv-sniffles.md.bam 1.2-map-pbmm2_ccs_mq20.chr1.md.bam 1.2-map-pbmm2_ccs_mq20.chr2.md.bam 1.2-map-pbmm2_ccs_mq20.chr3.md.bam 1.2-map-pbmm2_ccs_mq20.chr4.md.bam 1.2-map-pbmm2_ccs_mq20.chr5.md.bam 1.2-map-pbmm2_ccs_mq20.chr6.md.bam 1.2-map-pbmm2_ccs_mq20.chr7.md.bam 1.2-map-pbmm2_ccs_mq20.chr8.md.bam 1.2-map-pbmm2_ccs_mq20.chr9.md.bam 1.2-map-pbmm2_ccs_mq20.chr10.md.bam 1.2-map-pbmm2_ccs_mq20.chr11.md.bam 1.2-map-pbmm2_ccs_mq20.chr12.md.bam 1.2-map-pbmm2_ccs_mq20.chr13.md.bam 1.2-map-pbmm2_ccs_mq20.chr14.md.bam 1.2-map-pbmm2_ccs_mq20.chr15.md.bam 1.2-map-pbmm2_ccs_mq20.chr16.md.bam 1.2-map-pbmm2_ccs_mq20.chr17.md.bam 1.2-map-pbmm2_ccs_mq20.chr18.md.bam 1.2-map-pbmm2_ccs_mq20.chr19.md.bam 1.2-map-pbmm2_ccs_mq20.chr20.md.bam 1.2-map-pbmm2_ccs_mq20.chr21.md.bam 1.2-map-pbmm2_ccs_mq20.chr22.md.bam 1.2-map-pbmm2_ccs_mq20.chr23.md.bam 1.2-map-pbmm2_ccs_mq20.chr24.md.bam 1.2-map-pbmm2_ccs_mq20.chr25.md.bam 1.2-map-pbmm2_ccs_mq20.chr26.md.bam 1.2-map-pbmm2_ccs_mq20.chr27.md.bam 1.2-map-pbmm2_ccs_mq20.chr28.md.bam 1.2-map-pbmm2_ccs_mq20.chr29.md.bam 1.2-map-pbmm2_ccs_mq20.chrX.md.bam 1.2-map-pbmm2_ccs_mq20.chrMT.md.bam
-samtools sort 2-sv-sniffles.md.bam -o 2-sv-sniffles.md.sort.bam
-samtools index 2-sv-sniffles.md.sort.bam
-sniffles -i 2-sv-sniffles.md.sort.bam -v 2.3-sv-sniffles-v2.vcf
+samtools view -b -h map-pbmm2_ccs_mq20.bam ${chr} > map-pbmm2_ccs_mq20.chr${chr}.bam
+samtools calmd -bS map-pbmm2_ccs_mq20.chr${chr}.bam Bos_taurus.ARS-UCD1.2.dna.toplevel.fa > map-pbmm2_ccs_mq20.chr${chr}.md.bam 
+samtools merge sv-sniffles.md.bam map-pbmm2_ccs_mq20.chr1.md.bam \
+map-pbmm2_ccs_mq20.chr2.md.bam \
+map-pbmm2_ccs_mq20.chr3.md.bam \
+map-pbmm2_ccs_mq20.chr4.md.bam \
+map-pbmm2_ccs_mq20.chr5.md.bam \
+map-pbmm2_ccs_mq20.chr6.md.bam \
+map-pbmm2_ccs_mq20.chr7.md.bam \
+map-pbmm2_ccs_mq20.chr8.md.bam \
+map-pbmm2_ccs_mq20.chr9.md.bam \
+map-pbmm2_ccs_mq20.chr10.md.bam \
+map-pbmm2_ccs_mq20.chr11.md.bam \
+map-pbmm2_ccs_mq20.chr12.md.bam \
+map-pbmm2_ccs_mq20.chr13.md.bam \
+map-pbmm2_ccs_mq20.chr14.md.bam \
+map-pbmm2_ccs_mq20.chr15.md.bam \
+map-pbmm2_ccs_mq20.chr16.md.bam \
+map-pbmm2_ccs_mq20.chr17.md.bam \
+map-pbmm2_ccs_mq20.chr18.md.bam \
+map-pbmm2_ccs_mq20.chr19.md.bam \
+map-pbmm2_ccs_mq20.chr20.md.bam \
+map-pbmm2_ccs_mq20.chr21.md.bam \
+map-pbmm2_ccs_mq20.chr22.md.bam \
+map-pbmm2_ccs_mq20.chr23.md.bam \
+map-pbmm2_ccs_mq20.chr24.md.bam \
+map-pbmm2_ccs_mq20.chr25.md.bam \
+map-pbmm2_ccs_mq20.chr26.md.bam \
+map-pbmm2_ccs_mq20.chr27.md.bam \
+map-pbmm2_ccs_mq20.chr28.md.bam \
+map-pbmm2_ccs_mq20.chr29.md.bam \
+map-pbmm2_ccs_mq20.chrX.md.bam \
+map-pbmm2_ccs_mq20.chrMT.md.bam
+
+samtools sort sv-sniffles.md.bam -o sv-sniffles.md.sort.bam
+samtools index sv-sniffles.md.sort.bam
+sniffles -i sv-sniffles.md.sort.bam -v sv-sniffles.vcf
 
 
-SVision -o 2-sv-svision/ \
--b 1.2-map-pbmm2_ccs_mq20.bam \
+SVision -o sv-svision/ \
+-b map-pbmm2_ccs_mq20.bam \
 -m svision_model/svision-cnn-model.ckpt \
 -g Bos_taurus.ARS-UCD1.2.dna.toplevel.fa \
--n 4232 -s 5 --graph --qname
+-n samplename -s 5 --graph --qname
 
 
-cuteSV 1.2-map-pbmm2_ccs_mq20.bam Bos_taurus.ARS-UCD1.2.dna.toplevel.fa 2-sv-cutesv.vcf ./ \
+cuteSV map-pbmm2_ccs_mq20.bam Bos_taurus.ARS-UCD1.2.dna.toplevel.fa sv-cutesv.vcf ./ \
 --max_cluster_bias_INS 1000 \
 --diff_ratio_merging_INS 0.9 \
 --max_cluster_bias_DEL 1000 \
@@ -51,27 +87,43 @@ cuteSV 1.2-map-pbmm2_ccs_mq20.bam Bos_taurus.ARS-UCD1.2.dna.toplevel.fa 2-sv-cut
 
 
 #Assembly-based approach
-hifiasm -o 1.1-assembly-hifiasm -t 34 -r 3 sample.hifi_reads.fastq.gz
-gfatools gfa2fa 1.1-assembly-hifiasm.bp.p_ctg.gfa > 1.1-assembly-hifiasm.bp.p_ctg.fa
+hifiasm -o assembly-hifiasm -t 34 -r 3 sample.hifi_reads.fastq.gz
+gfatools gfa2fa assembly-hifiasm.bp.p_ctg.gfa > assembly-hifiasm.bp.p_ctg.fa
 
-minimap2 -x asm20 -m 10000 -z 10000,50 -r 50000 --end-bonus=100 --secondary=no -O 5,56 -E 4,1 -B 5 -a --eqx -Y Bos_taurus.ARS-UCD1.2.dna.toplevel.fa 1.1-assembly-hifiasm.bp.p_ctg.fa > 1.2-alignment-hifiasm.sam
-samtools sort -m4G -@4 -o 1.2-alignment-hifiasm.bam 1.2-alignment-hifiasm.sam
-samtools index 1.2-alignment-hifiasm.bam
+minimap2 -x asm20 -m 10000 -z 10000,50 -r 50000 \
+--end-bonus=100 \
+--secondary=no \
+-O 5,56 -E 4,1 -B 5 -a --eqx \
+-Y Bos_taurus.ARS-UCD1.2.dna.toplevel.fa assembly-hifiasm.bp.p_ctg.fa > alignment-hifiasm.sam
 
-svim-asm haploid 1.3-sv-hifiasm/ 1.2-alignment-hifiasm.bam Bos_taurus.ARS-UCD1.2.dna.toplevel.fa
+samtools sort -m4G -@4 -o alignment-hifiasm.bam alignment-hifiasm.sam
+samtools index alignment-hifiasm.bam
 
-busco -i 1.1-assembly-hifiasm.bp.p_ctg.fa -c 15 -o 1.5-busco-hifiasm -m genome -l mammalia_odb10 --offline
+svim-asm haploid sv-hifiasm/ alignment-hifiasm.bam Bos_taurus.ARS-UCD1.2.dna.toplevel.fa
+
+busco -i assembly-hifiasm.bp.p_ctg.fa -c 15 -o busco-hifiasm -m genome -l mammalia_odb10 --offline
 
 
 #High-confidence SVs
-jasmine file_list=2.2-merge-jasmine.txt out_file=2.2-merge-jasmine.vcf max_dist=1000 spec_len=50 spec_reads=1
+jasmine file_list=merge-jasmine.txt out_file=merge-jasmine.vcf max_dist=1000 spec_len=50 spec_reads=1
 
 
 #Functional relevance of SVs
-bedtools fisher -a 2.4-merge-jasmine_qc3_all_20_16_count_del.txt -b Cattle_Adipose_segments_e${i}.bed -g Bos_taurus.ARS-UCD1.2.dna.toplevel.fa.size | grep -v '#' | grep -v 'left' | awk -v OFS="\t" '{print $1,$2,$3,$4,"DEL","e""'$i'"}' >> Cattle_Adipose_segments.bed.txt
+bedtools fisher -a merge-jasmine_qc3_all_20_16_count_del.txt \
+-b Cattle_Adipose_segments_e${i}.bed \
+-g Bos_taurus.ARS-UCD1.2.dna.toplevel.fa.size | \
+grep -v '#' | \
+grep -v 'left' | \
+awk -v OFS="\t" '{print $1,$2,$3,$4,"DEL","e""'$i'"}' >> Cattle_Adipose_segments.bed.txt
 
 
 #Differential SVs identification
-bedtools intersect -a 2.14-hol_rfi_high3.bed -b 2.14-hol_rfi_low3.bed -f 0.80 -r -wa -wb > 2.14-hol_rfi_0.8.txt
-bedtools intersect -a 2.14-hol_rfi_high3.bed -b 2.14-hol_rfi_low3.bed -r -v > 2.14-hol_rfi_1bp_high.txt
-bedtools intersect -a 2.14-hol_rfi_low3.bed -b 2.14-hol_rfi_high3.bed -r -v > 2.14-hol_rfi_1bp_low.txt
+bedtools intersect -a hol_rfi_high.bed -b hol_rfi_low.bed -f 0.80 -r -wa -wb > hol_rfi_0.8.txt
+bedtools intersect -a hol_rfi_high.bed -b hol_rfi_low.bed -r -v > hol_rfi_1bp_high.txt
+bedtools intersect -a hol_rfi_low.bed -b hol_rfi_high.bed -r -v > hol_rfi_1bp_low.txt
+
+
+######################################
+#  Construction of cattle pangenome  #
+######################################
+snakemake -j15 -s snake_graph.py
